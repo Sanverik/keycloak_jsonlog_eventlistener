@@ -8,11 +8,15 @@ import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.GroupModel;
+import org.keycloak.models.GroupProvider;
 import org.keycloak.models.RealmModel;
+import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
+import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.List;
+import java.util.Set;
 import javax.json.*;
 
 public class JSONLogEventListenerProvider implements EventListenerProvider {
@@ -60,7 +64,7 @@ public class JSONLogEventListenerProvider implements EventListenerProvider {
 
     private UserModel getUserModelById(String userId) {
         RealmModel realmModel = session.getContext().getRealm();
-        return session.users().getUserById(userId, realmModel);
+        return session.users().getUserById(realmModel, userId);
     }
 
     // Returns a JsonArrayBuilder suitable for inserting
@@ -71,8 +75,9 @@ public class JSONLogEventListenerProvider implements EventListenerProvider {
 
         // getGroups() is deprecated in v12, so we can tidy
         // this up into a stream reduce
-        for (GroupModel group : user.getGroups()) {
-            jsonArray.add(group.getName());
+        Set<String> groups = user.getGroupsStream().map(GroupModel::getName).collect(Collectors.toSet());
+        for (String group : groups) {
+            jsonArray.add(group);
         }
 
         return jsonArray;
